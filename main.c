@@ -18,18 +18,22 @@
 //uncomment to send the FFTs results from the real microphones
 #define SEND_FROM_MIC
 
-
-
-
-
 int main(void)
 {
+
     halInit();
     chSysInit();
     mpu_init();
+
+    //inits the motors
     motors_init();
 
-
+    //temp tab used to store values in complex_float format
+    //needed bx doFFT_c
+    static complex_float temp_tab[FFT_SIZE];
+    //send_tab is used to save the state of the buffer to send (double buffering)
+    //to avoid modifications of the buffer while sending it
+    static float send_tab[FFT_SIZE];
 
 #ifdef SEND_FROM_MIC
     //starts the microphones processing thread.
@@ -38,13 +42,12 @@ int main(void)
 #endif  /* SEND_FROM_MIC */
 
     /* Infinite loop. */
-    while (1)
-    {
-    	asm  ("nop");
+    while (1) {
+    	update_direction(3);
 
-     }
-
+    }
 }
+
 #define STACK_CHK_GUARD 0xe2dee396
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
 
