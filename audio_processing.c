@@ -36,7 +36,7 @@ static angle_direction;
 
 #define SPEED_OF_SOUND		34400 // [cm/s]
 #define WHEEL_DISTANCE      5.35f    //cm
-#define DIAMETER		10 	 // [cm]
+#define DIAMETER			10 	 // [cm]
 #define PI                  3.1415926536f
 #define PERIMETER_EPUCK     (PI * WHEEL_DISTANCE)
 #define NSTEP_ONE_TURN      1000 // number of step for 1 turn of the motor
@@ -44,7 +44,8 @@ static angle_direction;
 
 //PRIVATE FUNCTIONS =======================================================
 
-void angle_calculation(uint16_t freq_max){
+void angle_calculation(uint16_t freq_max)
+{
 
 	float phase_left =0;
 	float phase_right =0;
