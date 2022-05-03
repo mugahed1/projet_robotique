@@ -3,12 +3,14 @@
 #include <math.h>
 #include <usbcfg.h>
 #include <chprintf.h>
-
+#include "sensors/VL53L0X/VL53L0X.h"
 
 #include <main.h>
 #include <motors.h>
 #include <motor_configuration.h>
 
+#define COLOR_THRESHOLD	16
+static uint16_t distance=0;
 
 //simple PI regulator implementation
 int16_t pi_regulator(float distance, float goal){
@@ -41,40 +43,52 @@ int16_t pi_regulator(float distance, float goal){
     return (int16_t)speed;
 }
 
-static THD_WORKING_AREA(waPiRegulator, 256);
-static THD_FUNCTION(PiRegulator, arg) {
-
-    chRegSetThreadName(__FUNCTION__);
-    (void)arg;
-
-    systime_t time;
-
-    int16_t speed = 0;
-    int16_t speed_correction = 0;
-
-    while(1){
-        time = chVTGetSystemTime();
-
-        //computes the speed to give to the motors
-        //distance_cm is modified by the image processing thread
-        speed = pi_regulator(get_distance_cm(), GOAL_DISTANCE);
-        //computes a correction factor to let the robot rotate to be in front of the line
-        speed_correction = (get_line_position() - (IMAGE_BUFFER_SIZE/2));
-
-        //if the line is nearly in front of the camera, don't rotate
-        if(abs(speed_correction) < ROTATION_THRESHOLD){
-        	speed_correction = 0;
-        }
-
-        //applies the speed from the PI regulator and the correction for the rotation
-		right_motor_set_speed(speed - ROTATION_COEFF * speed_correction);
-		left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
-
-        //100Hz
-        chThdSleepUntilWindowed(time, time + MS2ST(10));
-    }
+void set_speed(void)
+{
+	int speed =0;
+	distance = VL53L0X_get_dist_mm();
+	chprintf((BaseSequentialStream *)&SD3, "distance = %d \n",distance);
+	if(distance<200)
+	{
+		speed=0;
+	}else{speed = 1000;}
+	right_motor_set_speed(speed);
+	left_motor_set_speed(speed);
 }
 
-void pi_regulator_start(void){
-	chThdCreateStatic(waPiRegulator, sizeof(waPiRegulator), NORMALPRIO, PiRegulator, NULL);
+void color_detection(void)
+{
+	//Takes pixels 288 to 352 of the line 216 to 264 (48 lines)
+	po8030_advanced_config(FORMAT_RGB565, 288, 216, 352, 48, SUBSAMPLING_X1, SUBSAMPLING_X1);
+	dcmi_enable_double_buffering();
+	dcmi_set_capture_mode(CAPTURE_ONE_SHOT);
+	dcmi_prepare();
+
+	uint8_t image[3072] = {0};
+	uint8_t *img_buff_ptr;
+	uint32_t mean = 0;
+
+	dcmi_capture_start(); //starts a capture
+	wait_image_ready();	//waits for the capture to be done
+	img_buff_ptr = dcmi_get_last_image_ptr();
+
+	//Extracts only the red pixels
+	for(uint16_t i = 0 ; i < (2 * 3072) ; i+=2)
+	{
+		//extracts first 5bits of the first byte
+		//takes nothing from the second byte
+		image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
+		mean += image[i/2];
+	}
+	mean /= 3072;
+	if(mean> COLOR_THRESHOLD)
+	{
+		chprintf((BaseSequentialStream *)&SD3, "mean = %d \n",mean);
+		//robot movement for black color
+	}
+	else
+	{
+		chprintf((BaseSequentialStream *)&SD3, "mean = %d \n",mean);
+		//robot movement for white color
+	}
 }

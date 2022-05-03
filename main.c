@@ -16,6 +16,7 @@
 #include <arm_math.h>
 #include <motor_configuration.h>
 #include "sensors/VL53L0X/VL53L0X.h"
+#include <camera/po8030.h>
 
 static void serial_start(void)
 {
@@ -28,6 +29,8 @@ static void serial_start(void)
 
 	sdStart(&SD3, &ser_cfg); // UART3. Connected to the second com port of the programmer
 }
+//chprintf((BaseSequentialStream *)&SD3, "distance = %d \n",distance);
+
 
 int main(void)
 {
@@ -35,15 +38,14 @@ int main(void)
 	chSysInit();
 	mpu_init();
 
-	//inits the motors
-	serial_start();
-	motors_init();
-	// pi_regulator_start();
-	VL53L0X_start();
+	serial_start(); //communication with pc
 
-	while (1) {
-		uint16_t distance= VL53L0X_get_dist_mm();
-		chprintf((BaseSequentialStream *)&SD3, "distance = ",distance);
+	motors_init(); //inits the motors
+	VL53L0X_start(); //starts time of flight
+    dcmi_start();   //starts the camera
+	while (1){
+		//set_speed();
+		color_detection();
 		chThdSleepMilliseconds(500);
 	}
 }
@@ -55,3 +57,7 @@ void __stack_chk_fail(void)
 {
 	chSysHalt("Stack smashing detected");
 }
+
+
+
+
