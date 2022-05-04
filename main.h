@@ -15,8 +15,8 @@ extern "C" {
 #define GOAL_ANGLE 				0.0f
 #define MAX_DISTANCE 			25.0f
 #define ERROR_THRESHOLD			0.1	//[de l'erreur d'angle
-#define KP						800.0f
-#define KI 						3.5f	//must not be zero
+#define KP						150.0f
+#define KI 						0.05f	//must not be zero
 #define MAX_SUM_ERROR 			(MOTOR_SPEED_LIMIT/10) //KI)
 /** Robot wide IPC bus. */
 extern messagebus_t bus;

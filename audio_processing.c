@@ -40,15 +40,15 @@ static float angle_direction_old;
 
 void angle_calculation(uint16_t freq_max){
 
-	float phase_left =0;
-	float phase_right =0;
+	float phase_left  = 0;
+	float phase_right = 0;
 
 	phase_left = atan2f(micLeft_cmplx_input[2*freq_max+1],micLeft_cmplx_input[2*freq_max]);
 	phase_right = atan2f(micRight_cmplx_input[2*freq_max+1],micRight_cmplx_input[2*freq_max]);
 
-	angle_direction = phase_right - phase_left;
-
-	if((angle_direction == angle_direction_old + ANGLE_MARGE)||(angle_direction < angle_direction_old - ANGLE_MARGE)) {
+	angle_direction = (phase_right - phase_left)*2.85;
+	chprintf((BaseSequentialStream *)&SD3, "angle_direction    = %f\n",angle_direction);
+	if((angle_direction > angle_direction_old + ANGLE_MARGE)||(angle_direction < angle_direction_old - ANGLE_MARGE)) {
 		angle_direction = angle_direction_old;
 	}
 	else {
@@ -92,14 +92,11 @@ uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
 
 }
 
-
-
 //PUBLIC FUNCTIONS =======================================================
 
 
 //fonction permettant de faire le calul de la fft
 void processAudioData(int16_t *data, uint16_t num_samples){
-
 
 	static uint16_t nb_samples = 0;
 	uint16_t freq = 0;
@@ -114,7 +111,6 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 		micRight_cmplx_input[nb_samples] = 0;
 		micLeft_cmplx_input[nb_samples] = 0;
-
 
 		nb_samples++;
 
@@ -156,11 +152,9 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		else {
 			//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
 			angle_direction = 0;
-
 		}
 	}
 }
-
 
 float get_angle(void){
 	return angle_direction;
