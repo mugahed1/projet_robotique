@@ -54,7 +54,6 @@ void angle_calculation(uint16_t freq_max){
 	phase_right = atan2(micRight_cmplx_input[2*freq_max+1],micRight_cmplx_input[2*freq_max]);
 
 	float phase = phase_left - phase_right; // value is in radian between -pi and pi
-	angle_direction = acos(2*PI/FREQ_FORWARD*SPEED_OF_SOUND/DIAMETER); // value is in radian
 }
 
 
