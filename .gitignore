@@ -1,6 +1,8 @@
 build
 .DS_Store
 projet.launch
+.cprojet
+.projet
 
 # Prerequisites
 *.d
