@@ -21,8 +21,8 @@ static float micRight_cmplx_input[2 * FFT_SIZE];
 static float micLeft_output[FFT_SIZE];
 static float micRight_output[FFT_SIZE];
 
-static angle_direction;
-
+static float angle_direction;
+static float angle_direction_old;
 
 #define MIN_VALUE_THRESHOLD	10000 
 
@@ -34,13 +34,7 @@ static angle_direction;
 #define FREQ_FORWARD_L		(FREQ_FORWARD-1)
 #define FREQ_FORWARD_H		(FREQ_FORWARD+1)
 
-#define SPEED_OF_SOUND		34400 // [cm/s]
-#define WHEEL_DISTANCE      5.35f    //cm
-#define DIAMETER		10 	 // [cm]
-#define PI                  3.1415926536f
-#define PERIMETER_EPUCK     (PI * WHEEL_DISTANCE)
-#define NSTEP_ONE_TURN      1000 // number of step for 1 turn of the motor
-
+#define ANGLE_MARGE 		1
 
 //PRIVATE FUNCTIONS =======================================================
 
@@ -49,13 +43,18 @@ void angle_calculation(uint16_t freq_max){
 	float phase_left =0;
 	float phase_right =0;
 
+	phase_left = atan2f(micLeft_cmplx_input[2*freq_max+1],micLeft_cmplx_input[2*freq_max]);
+	phase_right = atan2f(micRight_cmplx_input[2*freq_max+1],micRight_cmplx_input[2*freq_max]);
 
-	phase_left = atan2(micLeft_cmplx_input[2*freq_max+1],micLeft_cmplx_input[2*freq_max]);
-	phase_right = atan2(micRight_cmplx_input[2*freq_max+1],micRight_cmplx_input[2*freq_max]);
+	angle_direction = phase_right - phase_left;
 
-	float phase = phase_left - phase_right; // value is in radian between -pi and pi
+	if((angle_direction == angle_direction_old + ANGLE_MARGE)||(angle_direction < angle_direction_old - ANGLE_MARGE)) {
+		angle_direction = angle_direction_old;
+	}
+	else {
+		angle_direction_old = angle_direction;
+	}
 }
-
 
 // fonction permettant d'extraire la plus grande frequence audible par le robot et donc la frequence percue.
 uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
@@ -86,7 +85,6 @@ uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
 	if((max_norm_index_left == max_norm_index_right) && (max_norm_right > MIN_VALUE_THRESHOLD )
 			&& (max_norm_left > MIN_VALUE_THRESHOLD )){
 		return max_norm_index_left;
-
 	}
 	else {
 		return 0;
@@ -96,28 +94,15 @@ uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
 
 
 
-
 //PUBLIC FUNCTIONS =======================================================
 
-
-void update_direction(int position){
-
-	 left_motor_set_speed(-200);
-	 right_motor_set_speed(200);
-	 left_motor_set_pos(position);
-	 right_motor_set_pos(position );
-	 left_motor_set_speed(200);
-	 right_motor_set_speed(-200);
-	 left_motor_set_pos(position );
-	 right_motor_set_pos(position );
-}
 
 //fonction permettant de faire le calul de la fft
 void processAudioData(int16_t *data, uint16_t num_samples){
 
 
 	static uint16_t nb_samples = 0;
-	static uint8_t mustSend = 0;
+	uint16_t freq = 0;
 
 	//loop to fill the buffers
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
@@ -160,36 +145,30 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		arm_cmplx_mag_f32(micRight_cmplx_input, micRight_output, FFT_SIZE);
 		arm_cmplx_mag_f32(micLeft_cmplx_input, micLeft_output, FFT_SIZE);
 
-
-		//sends only one FFT result over 10 for 1 mic to not flood the computer
-		//sends to UART3
-		if(mustSend > 8){
-			//signals to send the result to the computer
-			chBSemSignal(&sendToComputer_sem);
-			mustSend = 0;
-		}
 		nb_samples = 0;
-		mustSend++;
 
+		freq = frequence_max(micLeft_output, micRight_output);
+		//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
+		if ( freq == 16){
+			//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
+			angle_calculation(freq);
+		}
+		else {
+			//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
+			angle_direction = 0;
+
+		}
 	}
 }
 
-// fonction pemettant de recuperer le buffer complex des micros.
-float* get_audio_buffer_ptr(BUFFER_NAME_t name){
-	if(name == LEFT_CMPLX_INPUT){
-		return micLeft_cmplx_input;
-	}
-	else if (name == RIGHT_CMPLX_INPUT){
-		return micRight_cmplx_input;
-	}
 
-	else if (name == LEFT_OUTPUT){
-		return micLeft_output;
-	}
-	else if (name == RIGHT_OUTPUT){
-		return micRight_output;
-	}
-	else{
-		return NULL;
-	}
+float get_angle(void){
+	return angle_direction;
 }
+
+void audio_init(void){
+	angle_direction = 0;
+	angle_direction_old = 0;
+}
+
+
