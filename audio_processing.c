@@ -34,9 +34,15 @@ static float angle_direction_old;
 #define FREQ_FORWARD_L		(FREQ_FORWARD-1)
 #define FREQ_FORWARD_H		(FREQ_FORWARD+1)
 
+#define ANGLE_MARGE 		1
+#define SPEED_OF_SOUND		34400 // [cm/s]
+#define WHEEL_DISTANCE      5.35f    //cm
+#define DIAMETER			10 	 // [cm]
+#define PI                  3.1415926536f
+#define PERIMETER_EPUCK     (PI * WHEEL_DISTANCE)
+#define NSTEP_ONE_TURN      1000 // number of step for 1 turn of the motor
 
 #define ANGLE_MARGE 		1
-
 //PRIVATE FUNCTIONS =======================================================
 
 void angle_calculation(uint16_t freq_max)

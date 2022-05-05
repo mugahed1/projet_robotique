@@ -31,22 +31,14 @@ static void serial_start(void)
 	sdStart(&SD3, &ser_cfg); // UART3.
 }
 
+
 int main(void)
 {
-	static SerialConfig ser_cfg = {
-			115200,
-			0,
-			0,
-			0,
-	};
+	halInit();
+	chSysInit();
+	mpu_init();
 
-	sdStart(&SD3, &ser_cfg); // UART3. Connected to the second com port of the programmer
-}
-//chprintf((BaseSequentialStream *)&SD3, "distance = %d \n",distance);
-
-    halInit();
-    chSysInit();
-    mpu_init();
+	serial_start(); //communication with pc
 
     //inits the motors
     motors_init();
@@ -62,22 +54,7 @@ int main(void)
     	//waits 1 second
         chThdSleepMilliseconds(1000);
 
-int main(void)
-{
-	halInit();
-	chSysInit();
-	mpu_init();
-
-	serial_start(); //communication with pc
-
-	motors_init(); //inits the motors
-	VL53L0X_start(); //starts time of flight
-    dcmi_start();   //starts the camera
-	while (1){
-		//set_speed();
-		color_detection();
-		chThdSleepMilliseconds(500);
-	}
+    }
 }
 
 #define STACK_CHK_GUARD 0xe2dee396
