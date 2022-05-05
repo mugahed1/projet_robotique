@@ -12,6 +12,7 @@
 #include <audio/microphone.h>
 
 #include <audio_processing.h>
+#include <pi_regulator.h>
 #include <fft.h>
 #include <arm_math.h>
 #include <motor_configuration.h>
@@ -31,6 +32,21 @@ static void serial_start(void)
 }
 //chprintf((BaseSequentialStream *)&SD3, "distance = %d \n",distance);
 
+<<<<<<< HEAD
+=======
+static void serial_start(void)
+{
+	static SerialConfig ser_cfg = {
+	    115200,
+	    0,
+	    0,
+	    0,
+	};
+
+	sdStart(&SD3, &ser_cfg); // UART3.
+}
+>>>>>>> lea_branch
+>>>>>>> main
 
 int main(void)
 {
@@ -40,6 +56,7 @@ int main(void)
 
 	serial_start(); //communication with pc
 
+<<<<<<< HEAD
 	motors_init(); //inits the motors
 	VL53L0X_start(); //starts time of flight
     dcmi_start();   //starts the camera
@@ -48,6 +65,23 @@ int main(void)
 		color_detection();
 		chThdSleepMilliseconds(500);
 	}
+=======
+    //inits the motors
+    motors_init();
+    audio_init();
+    serial_start();
+    mic_start(&processAudioData);
+
+    pi_regulator_start();
+
+    /* Infinite loop. */
+    while (1) {
+
+    	//waits 1 second
+        chThdSleepMilliseconds(1000);
+
+    }
+>>>>>>> main
 }
 
 #define STACK_CHK_GUARD 0xe2dee396
