@@ -42,6 +42,7 @@ int main(void)
     mic_start(&processAudioData);
 
     pi_regulator_start();
+
     /* Infinite loop. */
     while (1) {
 
