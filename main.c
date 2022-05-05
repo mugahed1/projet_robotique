@@ -12,6 +12,7 @@
 #include <audio/microphone.h>
 
 #include <audio_processing.h>
+#include <pi_regulator.h>
 #include <fft.h>
 #include <arm_math.h>
 #include <motor_configuration.h>
@@ -19,6 +20,18 @@
 #include <camera/po8030.h>
 
 static void serial_start(void)
+{
+	static SerialConfig ser_cfg = {
+	    115200,
+	    0,
+	    0,
+	    0,
+	};
+
+	sdStart(&SD3, &ser_cfg); // UART3.
+}
+
+int main(void)
 {
 	static SerialConfig ser_cfg = {
 			115200,
@@ -31,6 +44,23 @@ static void serial_start(void)
 }
 //chprintf((BaseSequentialStream *)&SD3, "distance = %d \n",distance);
 
+    halInit();
+    chSysInit();
+    mpu_init();
+
+    //inits the motors
+    motors_init();
+    audio_init();
+    serial_start();
+    mic_start(&processAudioData);
+
+    pi_regulator_start();
+
+    /* Infinite loop. */
+    while (1) {
+
+    	//waits 1 second
+        chThdSleepMilliseconds(1000);
 
 int main(void)
 {

@@ -1,5 +1,10 @@
 .DS_Store
 build
+.DS_Store
+projet.launch
+.cprojet
+.projet
+
 # Prerequisites
 *.d
 
@@ -34,6 +39,8 @@ build
 *.exe
 *.out
 *.app
+
+*
 *.i*86
 *.x86_64
 *.hex
