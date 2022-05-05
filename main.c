@@ -32,7 +32,6 @@ int main(void)
 {
     halInit();
     chSysInit();
-    mpu_init();
 
     //inits the motors
     motors_init();
