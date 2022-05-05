@@ -35,6 +35,7 @@ static float angle_direction_old;
 #define FREQ_FORWARD_H		(FREQ_FORWARD+1)
 
 #define ANGLE_MARGE 		1
+#define CONSTANTE		2.85
 
 //PRIVATE FUNCTIONS =======================================================
 
@@ -46,7 +47,7 @@ void angle_calculation(uint16_t freq_max){
 	phase_left = atan2f(micLeft_cmplx_input[2*freq_max+1],micLeft_cmplx_input[2*freq_max]);
 	phase_right = atan2f(micRight_cmplx_input[2*freq_max+1],micRight_cmplx_input[2*freq_max]);
 
-	angle_direction = (phase_right - phase_left) * 2.85;
+	angle_direction = (phase_right - phase_left) * CONSTANTE;
 
 	if(angle_direction > 1 ){
 	}
