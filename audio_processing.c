@@ -49,8 +49,6 @@ void angle_calculation(uint16_t freq_max){
 
 	angle_direction = (phase_right - phase_left) * CONSTANTE;
 
-	if(angle_direction > 1 ){
-	}
 	if((angle_direction > angle_direction_old + ANGLE_MARGE)||(angle_direction < angle_direction_old - ANGLE_MARGE)) {
 		angle_direction = angle_direction_old;
 	}
