@@ -10,5 +10,6 @@
 
 //start the PI regulator thread
 void pi_regulator_start(void);
+void forward(void);
 
 #endif /* PI_REGULATOR_H_ */
