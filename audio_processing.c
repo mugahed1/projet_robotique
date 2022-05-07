@@ -16,14 +16,13 @@ static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 //2 times FFT_SIZE because these arrays contain complex numbers (real + imaginary)
 static float micLeft_cmplx_input[2 * FFT_SIZE];
 static float micRight_cmplx_input[2 * FFT_SIZE];
-
+static int16_t freq;
 //Arrays containing the computed magnitude of the complex numbers
 static float micLeft_output[FFT_SIZE];
 static float micRight_output[FFT_SIZE];
 
 static float angle_direction;
 static float angle_direction_old;
-
 #define MIN_VALUE_THRESHOLD	10000 
 
 #define MIN_FREQ		10	//we don't analyze before this index to not use resources for nothing
@@ -100,7 +99,6 @@ uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
 void processAudioData(int16_t *data, uint16_t num_samples){
 
 	static uint16_t nb_samples = 0;
-	uint16_t freq = 0;
 
 	//loop to fill the buffers
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
@@ -145,6 +143,7 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		nb_samples = 0;
 
 		freq = frequence_max(micLeft_output, micRight_output);
+<<<<<<< HEAD
 
 		if ( freq == FREQ_FLOWER){
 			angle_calculation(freq);
@@ -153,6 +152,13 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 			angle_direction = 0;
 		}
 	}
+=======
+		//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
+
+		angle_calculation(freq);
+		}
+
+>>>>>>> main
 }
 
 float get_angle(void){
@@ -163,5 +169,8 @@ void audio_init(void){
 	angle_direction = 0;
 	angle_direction_old = 0;
 }
-
+int16_t get_freq(void)
+{
+	return freq;
+}
 
