@@ -99,7 +99,6 @@ uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
 void processAudioData(int16_t *data, uint16_t num_samples){
 
 	static uint16_t nb_samples = 0;
-	freq = 0;
 
 	//loop to fill the buffers
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
@@ -145,15 +144,10 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 		freq = frequence_max(micLeft_output, micRight_output);
 		//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
-		if ( freq == 16){
-			//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
-			angle_calculation(freq);;
+
+		angle_calculation(freq);
 		}
-		else {
-			//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
-			angle_direction = 0;
-		}
-	}
+
 }
 
 float get_angle(void){
