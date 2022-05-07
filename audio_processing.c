@@ -27,7 +27,7 @@ static float angle_direction_old;
 #define MIN_VALUE_THRESHOLD	10000 
 
 #define MIN_FREQ		10	//we don't analyze before this index to not use resources for nothing
-#define FREQ_FORWARD	16	//250Hz
+#define FREQ_FLOWER		16	//250Hz
 
 #define MAX_FREQ		30	//we don't analyze after this index to not use resources for nothing
 
@@ -35,7 +35,7 @@ static float angle_direction_old;
 #define FREQ_FORWARD_H		(FREQ_FORWARD+1)
 
 #define ANGLE_MARGE 		1
-#define CONSTANTE		2.85
+#define CONSTANTE			2.85
 
 //PRIVATE FUNCTIONS =======================================================
 
@@ -145,13 +145,11 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		nb_samples = 0;
 
 		freq = frequence_max(micLeft_output, micRight_output);
-		//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
-		if ( freq == 16){
-			//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
+
+		if ( freq == FREQ_FLOWER){
 			angle_calculation(freq);
 		}
 		else {
-			//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
 			angle_direction = 0;
 		}
 	}

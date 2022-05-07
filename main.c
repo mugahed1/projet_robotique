@@ -32,7 +32,6 @@ int main(void)
 {
     halInit();
     chSysInit();
-
     //inits the motors
     motors_init();
     audio_init();
