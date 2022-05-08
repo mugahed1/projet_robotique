@@ -33,16 +33,12 @@ int main(void)
 {
     halInit();
     chSysInit();
-<<<<<<< HEAD
-=======
 
->>>>>>> main
     //inits the motors
     motors_init();
     audio_init();
     serial_start();
     mic_start(&processAudioData);
-
     VL53L0X_start();
     pi_regulator_start();
     /* Infinite loop. */

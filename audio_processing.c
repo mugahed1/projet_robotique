@@ -16,23 +16,17 @@ static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 //2 times FFT_SIZE because these arrays contain complex numbers (real + imaginary)
 static float micLeft_cmplx_input[2 * FFT_SIZE];
 static float micRight_cmplx_input[2 * FFT_SIZE];
-static int16_t freq;
+static int16_t freq_index;
 //Arrays containing the computed magnitude of the complex numbers
 static float micLeft_output[FFT_SIZE];
 static float micRight_output[FFT_SIZE];
 
 static float angle_direction;
 static float angle_direction_old;
+
 #define MIN_VALUE_THRESHOLD	10000 
-
 #define MIN_FREQ		10	//we don't analyze before this index to not use resources for nothing
-#define FREQ_FLOWER		16	//250Hz
-
 #define MAX_FREQ		30	//we don't analyze after this index to not use resources for nothing
-
-#define FREQ_FORWARD_L		(FREQ_FORWARD-1)
-#define FREQ_FORWARD_H		(FREQ_FORWARD+1)
-
 #define ANGLE_MARGE 		1
 #define CONSTANTE			2.85
 
@@ -55,6 +49,8 @@ void angle_calculation(uint16_t freq_max){
 		angle_direction_old = angle_direction;
 	}
 }
+
+
 
 // fonction permettant d'extraire la plus grande frequence audible par le robot et donc la frequence percue.
 uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
@@ -84,6 +80,7 @@ uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
 	//comparaison left and right
 	if((max_norm_index_left == max_norm_index_right) && (max_norm_right > MIN_VALUE_THRESHOLD )
 			&& (max_norm_left > MIN_VALUE_THRESHOLD )){
+		chprintf((BaseSequentialStream *)&SD3, "meme freq = %d\n", max_norm_index_left);
 		return max_norm_index_left;
 	}
 	else {
@@ -92,8 +89,8 @@ uint16_t frequence_max (float* micro_left_fft, float* micro_right_fft){
 
 }
 
-//PUBLIC FUNCTIONS =======================================================
 
+//PUBLIC FUNCTIONS =======================================================
 
 //fonction permettant de faire le calul de la fft
 void processAudioData(int16_t *data, uint16_t num_samples){
@@ -142,24 +139,12 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 		nb_samples = 0;
 
-		freq = frequence_max(micLeft_output, micRight_output);
-<<<<<<< HEAD
-
-		if ( freq == FREQ_FLOWER){
-			angle_calculation(freq);
-		}
-		else {
-			angle_direction = 0;
-		}
+		freq_index = frequence_max(micLeft_output, micRight_output);
+		chprintf((BaseSequentialStream *)&SD3, "freq_index  = %d\n", freq_index);
+		angle_calculation(freq_index);
 	}
-=======
-		//chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
-
-		angle_calculation(freq);
-		}
-
->>>>>>> main
 }
+
 
 float get_angle(void){
 	return angle_direction;
@@ -169,8 +154,9 @@ void audio_init(void){
 	angle_direction = 0;
 	angle_direction_old = 0;
 }
-int16_t get_freq(void)
+
+int16_t get_freq_index(void)
 {
-	return freq;
+	return freq_index;
 }
 

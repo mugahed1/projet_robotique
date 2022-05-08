@@ -3,20 +3,40 @@
 #include <math.h>
 #include <usbcfg.h>
 #include <chprintf.h>
-<<<<<<< HEAD
-=======
+
 #include "sensors/VL53L0X/VL53L0X.h"
->>>>>>> main
+
 
 #include <main.h>
 #include <motors.h>
 #include <pi_regulator.h>
 #include <audio_processing.h>
 #include <arm_math.h>
-<<<<<<< HEAD
-//SALUT
-=======
->>>>>>> main
+
+#define MODE_STOP   	0
+#define MODE_FLEUR    	1
+#define MODE_BUTINE     2
+#define MODE_BEE    	3
+#define FORWARD         1
+#define BACKWARD        -1
+#define SPEED 			500
+#define SPEED_TURN 		500
+#define DISTANCE_GOAL	200
+#define DISTANCE_GOAL_L 180
+#define DISTANCE_GOAL_H 220
+
+#define FREQ_FLOWER		16	//250Hz
+#define FREQ_BEE		23  //359HZ
+
+
+#define FREQ_FLOWER_L		(FREQ_FLOWER-1)
+#define FREQ_FLOWER_H		(FREQ_FLOWER+1)
+#define FREQ_BEE_L			(FREQ_BEE-1)
+#define FREQ_BEE_H			(FREQ_BEE+1)
+
+static int16_t orientation;
+static uint8_t mode;
+static bool butine;
 
 //simple PI regulator implementation
 int16_t pi_regulator_angle(float angle, float goal){
@@ -44,9 +64,6 @@ int16_t pi_regulator_angle(float angle, float goal){
     return (int16_t)speed;
 }
 
-<<<<<<< HEAD
-static THD_WORKING_AREA(waPiRegulator, 256);
-=======
 int16_t pi_regulator(float distance, float goal){
 
 	float error = 0;
@@ -74,27 +91,35 @@ int16_t pi_regulator(float distance, float goal){
     return (int16_t)speed;
 }
 
-uint8_t get_mode(uint16_t distance )
-{
+// fonction permettant la selection du mode en fonction de la frequence
+void update_mode(uint16_t freq_index, uint16_t distance ){
 
-	uint16_t freq=get_freq();
-	chprintf((BaseSequentialStream *)&SD3, "freq  = %d\n", freq);
-	if (freq == 16 && distance>200)
-	{
-		return 1;}
-	if (freq == 16 && distance<200)
-	{return 0;}
-	if (freq==19)
-	{return 2;}
-
-	if(freq== 23){
-		return 3;
+	if(freq_index >= FREQ_FLOWER_L && freq_index <= FREQ_FLOWER_H){
+		if((distance>= DISTANCE_GOAL_L && distance <= DISTANCE_GOAL_H) || (butine)){
+			butine = 1;
+			mode = MODE_BUTINE;
+		}
+		else if(distance >= DISTANCE_GOAL){
+			orientation = FORWARD;
+			mode = MODE_FLEUR;
+		}
+		else if(distance <= DISTANCE_GOAL) {
+			orientation = BACKWARD;
+			mode = MODE_FLEUR;
+		}
 	}
-	else{ return 0;}
-
+	else if(freq_index >= FREQ_BEE_L && freq_index <= FREQ_BEE_H){
+		butine = 0;
+		mode = MODE_BEE;
+	}
+	else {
+		butine = 0;
+		mode = MODE_STOP;
+	}
 }
+
 static THD_WORKING_AREA(waPiRegulator,256);
->>>>>>> main
+
 static THD_FUNCTION(PiRegulator, arg) {
 
     chRegSetThreadName(__FUNCTION__);
@@ -102,82 +127,43 @@ static THD_FUNCTION(PiRegulator, arg) {
 
     systime_t time;
 
-    int16_t speed = 0;
+    int16_t freq_index;
     int16_t speed_correction = 0;
-<<<<<<< HEAD
-
-    float angle = 0;
-
-    while(1){
-
-        time = chVTGetSystemTime();
-
-        angle =  get_angle();
-
-        speed_correction =  pi_regulator_angle(angle, GOAL_ANGLE);
-
-        if(abs(speed_correction) < ROTATION_THRESHOLD){
-
-        	speed_correction = 0;
-        }
-
-        chprintf((BaseSequentialStream *)&SD3, "speed_correction = %d \n",speed_correction);
-        //applies the speed from the PI regulator and the correction for the rotation
-		right_motor_set_speed(speed  + ROTATION_COEFF * speed_correction);
-		left_motor_set_speed(speed  - ROTATION_COEFF * speed_correction);
-
-        chThdSleepUntilWindowed(time, time + MS2ST(100));
-=======
-    int8_t mode = 0;
     uint16_t distance=0;
     float angle = 0;
+
+    orientation = 0;
     while(1)
     {
 		time = chVTGetSystemTime();
 
+		angle =  get_angle();
+		speed_correction = - pi_regulator_angle(angle, GOAL_ANGLE);
+		if(abs(speed_correction) < ROTATION_THRESHOLD){ // revoir la valeur des threshold
+			speed_correction = 0;
+		}
 		distance = VL53L0X_get_dist_mm();
-	    mode = get_mode(distance);
-	    chprintf((BaseSequentialStream *)&SD3, "mode  = %d\n", mode);
+		freq_index = get_freq_index();
+	    update_mode(freq_index, distance);
+
 	    switch(mode)
 	    {
 	    	case 0:
-
 				right_motor_set_speed(0);
 				left_motor_set_speed(0);
 				break;
-
 	    	case 1:
-				speed = 500;
-				angle =  get_angle();
-				speed_correction = - pi_regulator_angle(angle, GOAL_ANGLE);
-				chprintf((BaseSequentialStream *)&SD3, "speed_correction  = %d\n", speed_correction);
-				if(abs(speed_correction) < ROTATION_THRESHOLD){
-					speed_correction = 0;
-				}
-				//applies the speed from the PI regulator and the correction for the rotation
-				right_motor_set_speed(speed  + ROTATION_COEFF * speed_correction);
-				left_motor_set_speed(speed  - ROTATION_COEFF * speed_correction);
+	    		right_motor_set_speed(orientation*SPEED  + ROTATION_COEFF * speed_correction);
+	    		left_motor_set_speed(orientation*SPEED   - ROTATION_COEFF * speed_correction);
 				break;
-
 	    	case 2:
-				right_motor_set_speed(-1100);
-				left_motor_set_speed(1100);
+				right_motor_set_speed(-SPEED_TURN);
+				left_motor_set_speed(SPEED_TURN);
 				break;
 	    	case 3 :
-				angle =  get_angle();
-				speed=  pi_regulator(distance, 200);
-				speed_correction = - pi_regulator(angle , 0);
-
-				chprintf((BaseSequentialStream *)&SD3, "speed_correction  = %d\n", speed_correction);
-				if(abs(speed_correction) < 10){
-					speed_correction = 0;
-				}
-				right_motor_set_speed(speed  +20 * speed_correction);
-				left_motor_set_speed(speed   - 20* speed_correction);
-
+	    		break;
 	    }
         chThdSleepUntilWindowed(time, time + MS2ST(80));
->>>>>>> main
     }
 }
 
