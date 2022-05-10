@@ -12,6 +12,7 @@
 #include <leds.h>
 #include <pi_regulator.h>
 #include <audio_processing.h>
+#include <process_image.h>
 #include <arm_math.h>
 
 
@@ -66,33 +67,6 @@ int16_t pi_regulator_angle(float angle, float goal){
     return (int16_t)speed;
 }
 
-int16_t pi_regulator(float distance, float goal){
-
-	float error = 0;
-	float speed = 0;
-
-	static float sum_error = 0;
-
-	error = distance - goal;
-
-	if(fabs(error) < ERROR_THRESHOLD){
-		return 0;
-	}
-
-	sum_error += error;
-
-	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
-	if(sum_error > MAX_SUM_ERROR){
-		sum_error = MAX_SUM_ERROR;
-	}else if(sum_error < -MAX_SUM_ERROR){
-		sum_error = -MAX_SUM_ERROR;
-	}
-
-	speed = 80 * error + 0.35 * sum_error;
-
-    return (int16_t)speed;
-}
-
 // fonction permettant la selection du mode en fonction de la frequence
 void update_mode(uint16_t freq_index, uint16_t distance ){
 
@@ -121,7 +95,7 @@ void update_mode(uint16_t freq_index, uint16_t distance ){
 		}
 		else if(distance <= DISTANCE_GOAL) {
 			orientation = BACKWARD;
-			mode =MODE_BEE;
+			mode = MODE_BEE;
 		}
 	}
 	else {
@@ -141,10 +115,8 @@ static THD_FUNCTION(PiRegulator, arg) {
     systime_t time;
 
     int16_t freq_index;
-    int16_t mean = 0;
     int16_t speed_correction = 0;
     uint16_t distance=0;
-    int16_t noir = 0;
     float angle = 0;
 
     orientation = 0;
@@ -161,59 +133,42 @@ static THD_FUNCTION(PiRegulator, arg) {
 		distance = VL53L0X_get_dist_mm();
 		freq_index = get_freq_index();
 	    update_mode(freq_index, distance);
-	    //set_led(LED_FRONT, 1 );
-	    //set_led(LED_BACK, 1 );
-	    //set_led(LED_LEFT, 1 );
-	    //toggle_rgb_led(LED_FRONT,2, 100);
+
 	    switch(mode)
 	    {
 	    	case MODE_STOP:
 				right_motor_set_speed(0);
 				left_motor_set_speed(0);
 				break;
+
 	    	case MODE_FLEUR:
 	    		right_motor_set_speed(orientation*SPEED  + ROTATION_COEFF * speed_correction);
 	    		left_motor_set_speed(orientation*SPEED   - ROTATION_COEFF * speed_correction);
 				break;
+
 	    	case MODE_BUTINE:
-	    		//set_capture();
-				//mean = get_mean();
-				//while(get_mean() < 0){
-					//mean = get_mean();
-				//}
-				//if(mean > THRESHOLD){
-	    		//noir =0;
-	    		if(noir){
-	    			// si noir alors ne butine pas
-					right_motor_set_speed(0);
-					left_motor_set_speed(0);
+	    		set_capture();
+	    		if(fleur()){
+	    			right_motor_set_speed(-SPEED_TURN);
+	    			left_motor_set_speed(SPEED_TURN);
 	    		}
-
-				//}
 				else{
-					// si pas noir alors butine
-					chprintf((BaseSequentialStream *)&SD3, "noir  = %d \n", noir);
-
-					right_motor_set_speed(-SPEED_TURN);
-					left_motor_set_speed(SPEED_TURN);
-					chThdSleepMilliseconds(abs(NSTEP));
-					right_motor_set_speed(SPEED_TURN);
-					left_motor_set_speed(-SPEED_TURN);
-					chThdSleepMilliseconds(abs(NSTEP));
-					right_motor_set_speed(-SPEED_TURN);
-					left_motor_set_speed(SPEED_TURN);
-					chThdSleepMilliseconds(abs(NSTEP));
-					right_motor_set_speed(SPEED_TURN);
-					left_motor_set_speed(-SPEED_TURN);
-					chThdSleepMilliseconds(abs(NSTEP));
+					orientation = FORWARD;
+					for (int compteur = 0 ; compteur < 4 ; compteur++)
+					{
+						set_led(compteur, 1 );
+						right_motor_set_speed(orientation*SPEED_TURN);
+						left_motor_set_speed(-orientation*SPEED_TURN);
+						chThdSleepMilliseconds(abs(NSTEP));
+						orientation = -orientation;
+						set_led(compteur, 0 );
+					}
 				}
 				break;
-	    	case MODE_BEE :
 
+	    	case MODE_BEE :
 	    		right_motor_set_speed(orientation*SPEED  + ROTATION_COEFF * speed_correction);
 	    		left_motor_set_speed(orientation*SPEED   - ROTATION_COEFF * speed_correction);
-
-
 	    		break;
 	    }
         chThdSleepUntilWindowed(time, time + MS2ST(10));

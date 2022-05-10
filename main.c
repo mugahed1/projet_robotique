@@ -11,7 +11,8 @@
 #include <motors.h>
 #include <audio/microphone.h>
 #include "sensors/VL53L0X/VL53L0X.h"
-
+#include <camera/po8030.h>
+#include <process_image.h>
 #include <audio_processing.h>
 #include <pi_regulator.h>
 #include <fft.h>
@@ -39,6 +40,12 @@ int main(void)
     audio_init();
     serial_start();
     mic_start(&processAudioData);
+
+    //starts the camera
+    dcmi_start();
+    po8030_start();
+    process_image_start();
+
     VL53L0X_start();
     pi_regulator_start();
     /* Infinite loop. */
