@@ -9,9 +9,11 @@
 
 #include <main.h>
 #include <motors.h>
+#include <leds.h>
 #include <pi_regulator.h>
 #include <audio_processing.h>
 #include <arm_math.h>
+
 
 #define MODE_STOP   	0
 #define MODE_FLEUR    	1
@@ -20,14 +22,14 @@
 #define FORWARD         1
 #define BACKWARD        -1
 #define SPEED 			500
-#define SPEED_TURN 		500
+#define SPEED_TURN 		1000
 #define DISTANCE_GOAL	200
 #define DISTANCE_GOAL_L 180
 #define DISTANCE_GOAL_H 220
+#define NSTEP 			250
 
 #define FREQ_FLOWER		16	//250Hz
 #define FREQ_BEE		23  //359HZ
-
 
 #define FREQ_FLOWER_L		(FREQ_FLOWER-1)
 #define FREQ_FLOWER_H		(FREQ_FLOWER+1)
@@ -110,12 +112,23 @@ void update_mode(uint16_t freq_index, uint16_t distance ){
 	}
 	else if(freq_index >= FREQ_BEE_L && freq_index <= FREQ_BEE_H){
 		butine = 0;
-		mode = MODE_BEE;
+		if((distance>= DISTANCE_GOAL_L && distance <= DISTANCE_GOAL_H)){
+			mode = MODE_STOP;
+		}
+		else if(distance >= DISTANCE_GOAL){
+			orientation = FORWARD;
+			mode = MODE_BEE;
+		}
+		else if(distance <= DISTANCE_GOAL) {
+			orientation = BACKWARD;
+			mode =MODE_BEE;
+		}
 	}
 	else {
 		butine = 0;
 		mode = MODE_STOP;
 	}
+	chprintf((BaseSequentialStream *)&SD3, "mode  = %d \n", mode);
 }
 
 static THD_WORKING_AREA(waPiRegulator,256);
@@ -128,11 +141,14 @@ static THD_FUNCTION(PiRegulator, arg) {
     systime_t time;
 
     int16_t freq_index;
+    int16_t mean = 0;
     int16_t speed_correction = 0;
     uint16_t distance=0;
+    int16_t noir = 0;
     float angle = 0;
 
     orientation = 0;
+
     while(1)
     {
 		time = chVTGetSystemTime();
@@ -145,25 +161,62 @@ static THD_FUNCTION(PiRegulator, arg) {
 		distance = VL53L0X_get_dist_mm();
 		freq_index = get_freq_index();
 	    update_mode(freq_index, distance);
-
+	    //set_led(LED_FRONT, 1 );
+	    //set_led(LED_BACK, 1 );
+	    //set_led(LED_LEFT, 1 );
+	    //toggle_rgb_led(LED_FRONT,2, 100);
 	    switch(mode)
 	    {
-	    	case 0:
+	    	case MODE_STOP:
 				right_motor_set_speed(0);
 				left_motor_set_speed(0);
 				break;
-	    	case 1:
+	    	case MODE_FLEUR:
 	    		right_motor_set_speed(orientation*SPEED  + ROTATION_COEFF * speed_correction);
 	    		left_motor_set_speed(orientation*SPEED   - ROTATION_COEFF * speed_correction);
 				break;
-	    	case 2:
-				right_motor_set_speed(-SPEED_TURN);
-				left_motor_set_speed(SPEED_TURN);
+	    	case MODE_BUTINE:
+	    		//set_capture();
+				//mean = get_mean();
+				//while(get_mean() < 0){
+					//mean = get_mean();
+				//}
+				//if(mean > THRESHOLD){
+	    		//noir =0;
+	    		if(noir){
+	    			// si noir alors ne butine pas
+					right_motor_set_speed(0);
+					left_motor_set_speed(0);
+	    		}
+
+				//}
+				else{
+					// si pas noir alors butine
+					chprintf((BaseSequentialStream *)&SD3, "noir  = %d \n", noir);
+
+					right_motor_set_speed(-SPEED_TURN);
+					left_motor_set_speed(SPEED_TURN);
+					chThdSleepMilliseconds(abs(NSTEP));
+					right_motor_set_speed(SPEED_TURN);
+					left_motor_set_speed(-SPEED_TURN);
+					chThdSleepMilliseconds(abs(NSTEP));
+					right_motor_set_speed(-SPEED_TURN);
+					left_motor_set_speed(SPEED_TURN);
+					chThdSleepMilliseconds(abs(NSTEP));
+					right_motor_set_speed(SPEED_TURN);
+					left_motor_set_speed(-SPEED_TURN);
+					chThdSleepMilliseconds(abs(NSTEP));
+				}
 				break;
-	    	case 3 :
+	    	case MODE_BEE :
+
+	    		right_motor_set_speed(orientation*SPEED  + ROTATION_COEFF * speed_correction);
+	    		left_motor_set_speed(orientation*SPEED   - ROTATION_COEFF * speed_correction);
+
+
 	    		break;
 	    }
-        chThdSleepUntilWindowed(time, time + MS2ST(80));
+        chThdSleepUntilWindowed(time, time + MS2ST(10));
     }
 }
 
