@@ -14,8 +14,16 @@
 //semaphore
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 
-static bool capture=true;
+static bool capture= false;
+static bool butine= false;
+static uint16_t mean  = 0;
 
+void SendUint8ToComputer(uint8_t* data, uint16_t size)
+{
+	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
+	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)&size, sizeof(uint16_t));
+	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)data, size);
+}
 static THD_WORKING_AREA(waCaptureImage, 256);
 static THD_FUNCTION(CaptureImage, arg) {
 
@@ -30,7 +38,7 @@ static THD_FUNCTION(CaptureImage, arg) {
 	dcmi_prepare();
 
     while(1){
-    	if(capture)
+    	if(capture)//capture)
     	{
 			//starts a capture
 			dcmi_capture_start();
@@ -51,7 +59,10 @@ static THD_FUNCTION(ProcessImage, arg) {
     (void)arg;
 
 	uint8_t *img_buff_ptr;
-	uint16_t mean = 0;
+	uint16_t var  = 0;
+	bool send_to_computer = true;
+	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
+	//bool butine = false;
 
     while(1){
     	//waits until an image has been captured
@@ -63,13 +74,31 @@ static THD_FUNCTION(ProcessImage, arg) {
 		for(uint16_t i = 0 ; i < (2 * IMAGE_BUFFER_SIZE) ; i+=2){
 			//extracts first 5bits of the first byte
 			//takes nothing from the second byte
-			mean += (uint8_t)img_buff_ptr[i]&0xF8;
+			//var = (uint8_t)img_buff_ptr[i]&0xF8;
+			image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
+			var += image[i/2];
+			if (var > 200)
+			{
+				//fleur(true);
+				butine = true;
+				chprintf((BaseSequentialStream *)&SD3, "var  =  %d\n", var);
+			}
+
+			//image[i/2] = (uint8_t)img_buff_ptr[i]&0xF8;
 		}
 
-		mean/=IMAGE_BUFFER_SIZE;
-		chprintf((BaseSequentialStream *)&SD3, "mean  = %d\n", mean);
+		mean = var/IMAGE_BUFFER_SIZE;
 
-		//capture=false;
+		if(send_to_computer){
+					//sends to the computer the image
+					SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
+				}
+				//invert the bool
+				send_to_computer = !send_to_computer;
+
+
+
+		capture=false;
 		chThdSleepMilliseconds(100);
     }
 }
@@ -83,4 +112,18 @@ void process_image_start(void){
 void set_capture(void)
 {
 	capture=true;
+}
+void set_butine(void)
+{
+	butine = false;
+}
+bool fleur (void ){
+	if(butine){
+		chprintf((BaseSequentialStream *)&SD3, "true");
+	}
+	else{
+		chprintf((BaseSequentialStream *)&SD3, "false");
+	}
+
+	return butine;
 }

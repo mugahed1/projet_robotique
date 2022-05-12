@@ -24,9 +24,9 @@
 #define BACKWARD        -1
 #define SPEED 			500
 #define SPEED_TURN 		1000
-#define DISTANCE_GOAL	200
-#define DISTANCE_GOAL_L 180
-#define DISTANCE_GOAL_H 220
+#define DISTANCE_GOAL	100 //200
+#define DISTANCE_GOAL_L 80 //180
+#define DISTANCE_GOAL_H 120 //220
 #define NSTEP 			250
 
 #define FREQ_FLOWER		16	//250Hz
@@ -40,6 +40,7 @@
 static int16_t orientation;
 static uint8_t mode;
 static bool butine;
+static bool action = true;
 
 //simple PI regulator implementation
 int16_t pi_regulator_angle(float angle, float goal){
@@ -72,14 +73,23 @@ void update_mode(uint16_t freq_index, uint16_t distance ){
 
 	if(freq_index >= FREQ_FLOWER_L && freq_index <= FREQ_FLOWER_H){
 		if((distance>= DISTANCE_GOAL_L && distance <= DISTANCE_GOAL_H) || (butine)){
-			butine = 1;
-			mode = MODE_BUTINE;
+
+			if(action){
+				butine = 1;
+				mode = MODE_BUTINE;
+				action = false;
+			}
+			else{
+				mode = MODE_STOP;
+			}
 		}
+
 		else if(distance >= DISTANCE_GOAL){
 			orientation = FORWARD;
 			mode = MODE_FLEUR;
 		}
 		else if(distance <= DISTANCE_GOAL) {
+
 			orientation = BACKWARD;
 			mode = MODE_FLEUR;
 		}
@@ -99,10 +109,11 @@ void update_mode(uint16_t freq_index, uint16_t distance ){
 		}
 	}
 	else {
+		action = true;
 		butine = 0;
 		mode = MODE_STOP;
 	}
-	chprintf((BaseSequentialStream *)&SD3, "mode  = %d \n", mode);
+	//chprintf((BaseSequentialStream *)&SD3, "mode  = %d \n", mode);
 }
 
 static THD_WORKING_AREA(waPiRegulator,256);
@@ -148,22 +159,26 @@ static THD_FUNCTION(PiRegulator, arg) {
 
 	    	case MODE_BUTINE:
 	    		set_capture();
+	    		chThdSleepMilliseconds(abs(500));
 	    		if(fleur()){
-	    			right_motor_set_speed(-SPEED_TURN);
-	    			left_motor_set_speed(SPEED_TURN);
-	    		}
-				else{
-					orientation = FORWARD;
+	    			orientation = FORWARD;
 					for (int compteur = 0 ; compteur < 4 ; compteur++)
 					{
 						set_led(compteur, 1 );
 						right_motor_set_speed(orientation*SPEED_TURN);
 						left_motor_set_speed(-orientation*SPEED_TURN);
 						chThdSleepMilliseconds(abs(NSTEP));
-						orientation = -orientation;
+						orientation = - orientation;
 						set_led(compteur, 0 );
 					}
+	    		}
+				else{
+					right_motor_set_speed(-SPEED_TURN);
+					left_motor_set_speed(SPEED_TURN);
+					chThdSleepMilliseconds(abs(5.2*NSTEP));
+					set_butine();
 				}
+
 				break;
 
 	    	case MODE_BEE :

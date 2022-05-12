@@ -30,6 +30,8 @@ static float angle_direction_old;
 #define ANGLE_MARGE 		1
 #define CONSTANTE			2.76
 
+#define OFFSET				6.9
+
 
 //PRIVATE FUNCTIONS =======================================================
 
@@ -41,9 +43,12 @@ void angle_calculation(uint16_t freq_max){
 	phase_left = atan2f(micLeft_cmplx_input[2*freq_max+1],micLeft_cmplx_input[2*freq_max]);
 	phase_right = atan2f(micRight_cmplx_input[2*freq_max+1],micRight_cmplx_input[2*freq_max]);
 
+	angle_direction = (phase_right - phase_left) * (-0.25) + -1.725;
+	//chprintf((BaseSequentialStream *)&SD3, "angle_2  = %f \n", angle_direction);
 
 	angle_direction = (phase_right - phase_left) * CONSTANTE ;
-	chprintf((BaseSequentialStream *)&SD3, "angle  = %f \n", angle_direction * (180/PI));
+	//chprintf((BaseSequentialStream *)&SD3, "angle  = %f \n", angle_direction * (180/PI));
+
 	if((angle_direction > angle_direction_old + ANGLE_MARGE)||(angle_direction < angle_direction_old - ANGLE_MARGE)) {
 		angle_direction = angle_direction_old;
 	}
