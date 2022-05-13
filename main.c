@@ -7,18 +7,18 @@
 #include "memory_protection.h"
 #include <usbcfg.h>
 #include <main.h>
-#include <chprintf.h>
+#include <chprintf.h>//
 #include <motors.h>
 #include <audio/microphone.h>
-#include "sensors/VL53L0X/VL53L0X.h"
-#include <camera/po8030.h>
-#include <process_image.h>
+#include "sensors/VL53L0X/VL53L0X.h" // est ce que c'est des " ou <
+
 #include <audio_processing.h>
-#include <pi_regulator.h>
 #include <fft.h>
 #include <arm_math.h>
+#include <behavior.h>
+#include <leds.h>
 
-static void serial_start(void)
+static void serial_start(void)  // a enlever
 {
 	static SerialConfig ser_cfg = {
 	    115200,
@@ -35,25 +35,28 @@ int main(void)
     halInit();
     chSysInit();
 
-    //inits the motors
+    //starts the serial communication //a enlever
+    serial_start();
+
+    //inits the leds, the motors and the audio angles
+    clear_leds();
     motors_init();
     audio_init();
-    serial_start();
+
+    //starts the microphones processing thread.
     mic_start(&processAudioData);
 
-    //starts the camera
-    dcmi_start();
-    po8030_start();
-    process_image_start();
-
-    VL53L0X_start();
+    //starts the threads for the pi regulator and the TOF
     pi_regulator_start();
+    VL53L0X_start();
+
     /* Infinite loop. */
     while (1) {
     	//waits 1 second
         chThdSleepMilliseconds(1000);
     }
 }
+
 
 #define STACK_CHK_GUARD 0xe2dee396
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD;

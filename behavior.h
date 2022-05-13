@@ -5,10 +5,10 @@
  *      Author: leabliniere
  */
 
-#ifndef PI_REGULATOR_H_
-#define PI_REGULATOR_H_
+#ifndef BEHAVIOR_H_
+#define BEHAVIOR_H_
 
 //start the PI regulator thread
 void pi_regulator_start(void);
 
-#endif /* PI_REGULATOR_H_ */
+#endif /* BEHAVIOR_H_ */
