@@ -1,8 +1,6 @@
 #include "ch.h"
 #include "hal.h"
 #include <math.h>
-#include <usbcfg.h>
-#include <chprintf.h>
 
 #include "sensors/VL53L0X/VL53L0X.h"
 
@@ -11,10 +9,10 @@
 #include <leds.h>
 #include <audio_processing.h>
 #include <arm_math.h>
-#include <behavior.h>
+#include <behaviour.h>
 
 #define MODE_STOP   	0
-#define MODE_FLEUR    	1
+#define MODE_FLOWER    	1
 #define MODE_BUTINE     2
 #define MODE_BEE    	3
 #define MODE_NO_FLOWER  4
@@ -35,20 +33,20 @@
 #define NB_ROTATION 	4
 #define NSTEP 			250
 #define NSTEP_FORWARD 	2500
-#define HALF_TURN 		700
+#define HALF_TURN 		650
 #define ONE_TURN 		2*HALF_TURN
 
 #define FREQ_FLOWER		16	//250Hz
 #define FREQ_ACTION		19  //296HZ
-#define FREQ_BEE		23  //359HZ
+#define FREQ_FOLLOW		23  //359HZ
 #define FREQ_LEADER		26  //406HZ
 
 #define FREQ_FLOWER_L		(FREQ_FLOWER-1)
 #define FREQ_FLOWER_H		(FREQ_FLOWER+1)
 #define FREQ_ACTION_L		(FREQ_ACTION-1)
 #define FREQ_ACTION_H		(FREQ_ACTION+1)
-#define FREQ_BEE_L			(FREQ_BEE-1)
-#define FREQ_BEE_H			(FREQ_BEE+1)
+#define FREQ_FOLLOW_L		(FREQ_FOLLOW-1)
+#define FREQ_FOLLOW_H		(FREQ_FOLLOW+1)
 #define FREQ_LEADER_L		(FREQ_LEADER-1)
 #define FREQ_LEADER_H		(FREQ_LEADER+1)
 
@@ -99,16 +97,16 @@ void update_mode(uint16_t freq_index, uint16_t distance ){
 		}
 		else if(distance >= DISTANCE_GOAL){
 			orientation = FORWARD;
-			mode = MODE_FLEUR;
+			mode = MODE_FLOWER;
 		}
 		else if(distance <= DISTANCE_GOAL) {
 			orientation = BACKWARD;
-			mode = MODE_FLEUR;
+			mode = MODE_FLOWER;
 		}
 	}
 
 	// if bee frequency then follow the bee.
-	else if(freq_index >= FREQ_BEE_L && freq_index <= FREQ_BEE_H){
+	else if(freq_index >= FREQ_FOLLOW_L && freq_index <= FREQ_FOLLOW_H){
 		if((distance>= DISTANCE_GOAL_L && distance <= DISTANCE_GOAL_H)){
 			mode = MODE_STOP;
 		}
@@ -148,8 +146,8 @@ void update_mode(uint16_t freq_index, uint16_t distance ){
 	}
 }
 
-static THD_WORKING_AREA(waPiRegulator,256);
-static THD_FUNCTION(PiRegulator, arg) {
+static THD_WORKING_AREA(waBehaviour,256);
+static THD_FUNCTION(Behaviour, arg) {
 
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -191,7 +189,7 @@ static THD_FUNCTION(PiRegulator, arg) {
 				left_motor_set_speed(0);
 				break;
 
-	    	case MODE_FLEUR:
+	    	case MODE_FLOWER:
 	    		right_motor_set_speed(orientation*SPEED  + ROTATION_COEFF * speed_correction);
 	    		left_motor_set_speed(orientation*SPEED   - ROTATION_COEFF * speed_correction);
 				break;
@@ -244,8 +242,8 @@ static THD_FUNCTION(PiRegulator, arg) {
 //==================================================================================================================
 
 
-void pi_regulator_start(void){
-	chThdCreateStatic(waPiRegulator, sizeof(waPiRegulator), NORMALPRIO, PiRegulator, NULL);
+void behaviour_start(void){
+	chThdCreateStatic(waBehaviour, sizeof(waBehaviour), NORMALPRIO, Behaviour, NULL);
 }
 
 
